@@ -17,8 +17,13 @@
       "bundleIdentifier": "com.farenest.app",
       "buildNumber": "1",
       "supportsTablet": true,
-      "config": { "usesNonExemptEncryption": false },
-      "infoPlist": { "ITSAppUsesNonExemptEncryption": false }
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.farenest.app",
@@ -29,12 +34,18 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "blockedPermissions": ["android.permission.RECORD_AUDIO"]
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
-    "web": { "favicon": "./assets/favicon.png" },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
     "plugins": [
       "expo-web-browser",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-apple-authentication",
+      "expo-secure-store"
     ],
     "extra": {
       "apiUrl": "",

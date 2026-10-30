@@ -11,6 +11,7 @@ const app = express();
 app.set('trust proxy', true);
 app.use(express.json({ limit: '1mb' }));
 store.seedIfEmpty();
+app.use(require('./lib/auth').router); // accounts: website + mobile apps
 
 const CURRENCY = process.env.DEFAULT_CURRENCY || 'INR';
 const iata = s => String(s || '').trim().toUpperCase().slice(0, 3);

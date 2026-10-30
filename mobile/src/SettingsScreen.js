@@ -5,6 +5,7 @@ import Constants from 'expo-constants';
 import { useTheme } from './theme';
 import { getApiUrl, setApiUrl, defaultApiUrl } from './api';
 import { Button } from './components';
+import AccountCard from './AccountCard';
 
 export default function SettingsScreen() {
   const t = useTheme();
@@ -35,7 +36,8 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: t.bg }} contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-      <Text style={[st.h, { color: t.ink }]}>Settings</Text>
+      <Text style={[st.h, { color: t.ink }]}>Account</Text>
+      <AccountCard />
 
       {showServer && (
         <View style={[st.box, { backgroundColor: t.surface, borderColor: t.line }]}>

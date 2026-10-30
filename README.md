@@ -66,3 +66,48 @@ Create `providers/myapi.js` exporting `{ label, verticals, credentialFields, set
 ## Mobile apps
 
 The `mobile/` folder has the Android and iOS app (Expo / React Native). See [mobile/README.md](mobile/README.md) for building and submitting to Google Play and the App Store. Store-required pages: `privacy.html`, `terms.html`, `support.html`.
+
+## Accounts and Google login (website + apps)
+
+One account works everywhere. The website and both apps log in against this server, so a person who signs up on the website can log in on the app with the same Google account or email, and their saved searches sync.
+
+| Method | Website | Android app | iOS app |
+|---|---|---|---|
+| Google | ✓ | ✓ | ✓ |
+| Email + password | ✓ | ✓ | ✓ |
+| Sign in with Apple | — | — | ✓ (Apple requires it when Google login is offered) |
+
+Accounts are matched by email: logging in with Google, Apple or a password for the same verified email opens the same account. Users can delete their account from the website or the app (both stores require this).
+
+### Set up Google login (10 minutes)
+
+1. Go to **console.cloud.google.com** → create a project → **APIs & Services → OAuth consent screen**. Choose *External*, fill in the app name (FareNest), support email, and your privacy policy URL. Publish the app when ready.
+2. **Credentials → Create credentials → OAuth client ID → Web application.**
+   - Authorized redirect URI: `https://YOUR-SERVER/auth/google/callback` (add `http://localhost:3000/auth/google/callback` for testing)
+3. Copy the client ID and secret into `.env`:
+   ```
+   PUBLIC_URL=https://YOUR-SERVER
+   GOOGLE_CLIENT_ID=....apps.googleusercontent.com
+   GOOGLE_CLIENT_SECRET=...
+   AUTH_SECRET=<long random string>
+   ```
+4. Restart the server. The "Continue with Google" button appears on the website automatically.
+
+The apps use the **same web client**: they open the server's Google page in the phone's secure browser, and the server sends the user back to the app via `farenest://auth`. No separate Android or iOS Google client is needed.
+
+### Sign in with Apple (iOS)
+
+In the Apple Developer portal, enable **Sign in with Apple** for your app's bundle ID (EAS does this automatically on build). Set `APPLE_BUNDLE_IDS` in `.env` to that bundle ID.
+
+### Account API
+
+| Endpoint | What it does |
+|---|---|
+| `POST /api/auth/signup` · `POST /api/auth/login` | Email + password, returns `{ token, user }` |
+| `GET /auth/google/start?redirect=/` or `farenest://auth` | Google login for website / app |
+| `POST /api/auth/apple` | iOS Sign in with Apple |
+| `GET /api/me` · `PATCH /api/me` · `DELETE /api/me` | Profile, rename, delete account |
+| `GET/PUT /api/me/saved` | Saved and recent searches (synced) |
+| `POST /api/me/logout-all` | Sign out on every device |
+
+Send the token as `Authorization: Bearer <token>`. Tokens last 60 days.

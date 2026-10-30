@@ -8,8 +8,9 @@ import ResultsScreen from './src/ResultsScreen';
 import SavedScreen from './src/SavedScreen';
 import SettingsScreen from './src/SettingsScreen';
 import { addRecent } from './src/storage';
+import { restore } from './src/auth';
 
-const TABS = [['search', 'Search', '⌕'], ['saved', 'Saved', '★'], ['settings', 'Settings', '⚙']];
+const TABS = [['search', 'Search', '⌕'], ['saved', 'Saved', '★'], ['settings', 'Account', '☺']];
 
 function Main() {
   const t = useTheme();
@@ -17,6 +18,7 @@ function Main() {
   const [tab, setTab] = useState('search');
   const [vertical, setVertical] = useState('flights');
   const [results, setResults] = useState(null); // { vertical, query, label }
+  useEffect(() => { restore(); }, []);
 
   const openSearch = (v, q, label) => {
     setVertical(v); setResults({ vertical: v, query: q, label, at: Date.now() }); setTab('search');

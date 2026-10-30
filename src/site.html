@@ -117,6 +117,26 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px}
 footer .wrap{padding-block:22px;display:grid;gap:8px}
 .disclose{max-width:75ch}
 .demo-note{font-size:12px;color:var(--muted)}
+/* Account */
+.acct{border:1px solid rgba(255,255,255,.3);background:transparent;color:var(--band-ink);border-radius:999px;padding:6px 14px;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:8px;max-width:44vw}
+.acct span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.avatar{width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:12px;font-weight:700;flex:none;overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.overlay{position:fixed;inset:0;background:rgba(5,15,18,.55);display:grid;place-items:center;z-index:50;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.modal{background:var(--surface);color:var(--ink);border-radius:14px;width:100%;max-width:400px;padding:22px;display:grid;gap:12px;max-height:90vh;overflow:auto}
+.modal h2{font-family:var(--f-display);margin:0;font-size:22px}
+.modal .x{justify-self:end;background:none;border:0;font-size:20px;cursor:pointer;color:var(--muted);margin:-8px -6px -16px 0}
+.gbtn{display:flex;align-items:center;justify-content:center;gap:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:11px;font-weight:600;cursor:pointer;text-decoration:none}
+.or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.modal input{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg);width:100%}
+.modal .primary{background:var(--teal);color:#fff;border:0;border-radius:8px;padding:11px;font-weight:700;cursor:pointer}
+.err{color:#c4472f;font-size:13px;margin:0}
+.saved-list{display:grid;gap:6px}
+.saved-list button{display:flex;justify-content:space-between;gap:8px;text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;cursor:pointer}
+.star{background:none;border:1px solid var(--line);border-radius:999px;padding:2px 10px;cursor:pointer;font-size:12px;color:var(--ink)}
+.star[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.danger{background:none;border:0;color:#c4472f;cursor:pointer;padding:0;font-size:13px;text-align:left}
 </style>
 
 <div class="band">
@@ -125,7 +145,7 @@ footer .wrap{padding-block:22px;display:grid;gap:8px}
       <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="var(--accent)"/><path d="M6 16.5l14-6-4.5 9-2.5-3.2-4 2.2 1.5-3.5z" fill="var(--band)"/></svg>
       FareNest
     </a>
-    <nav><a href="#flights">Flights</a><a href="#hotels">Hotels</a><a href="#cars">Car hire</a></nav>
+    <button class="acct" id="acctBtn" type="button"><span class="avatar" id="acctAv">→</span><span id="acctName">Log in</span></button>
   </div></header>
   <section class="hero"><div class="wrap">
     <h1 id="headline">One search. Every fare. The lowest price wins.</h1>
@@ -189,6 +209,34 @@ footer .wrap{padding-block:22px;display:grid;gap:8px}
     </section>
   </div>
 </div></main>
+
+<div class="overlay" id="loginModal" hidden>
+  <form class="modal" id="loginForm" novalidate>
+    <button type="button" class="x" data-close aria-label="Close">✕</button>
+    <h2 id="loginTitle">Log in to FareNest</h2>
+    <p class="from" style="margin:0">One account for the website and the FareNest apps. Your saved searches follow you everywhere.</p>
+    <a class="gbtn" id="googleBtn" href="/auth/google/start?redirect=/">Continue with Google</a>
+    <div class="or">or use email</div>
+    <input id="lfName" type="text" placeholder="Your name" autocomplete="name" hidden>
+    <input id="lfEmail" type="email" placeholder="Email address" autocomplete="email" required>
+    <input id="lfPass" type="password" placeholder="Password (8+ characters)" autocomplete="current-password" required>
+    <p class="err" id="loginErr" hidden></p>
+    <button class="primary" id="loginSubmit">Log in</button>
+    <button type="button" class="link" id="loginSwitch">New here? Create an account</button>
+  </form>
+</div>
+
+<div class="overlay" id="acctModal" hidden>
+  <div class="modal">
+    <button type="button" class="x" data-close aria-label="Close">✕</button>
+    <h2 id="acctTitle">Your account</h2>
+    <p class="from" id="acctEmail" style="margin:0"></p>
+    <h3 class="from" style="margin:8px 0 0;text-transform:uppercase;letter-spacing:.08em;font-size:12px">Saved searches</h3>
+    <div class="saved-list" id="savedList"></div>
+    <button type="button" class="primary" id="logoutBtn">Log out</button>
+    <button type="button" class="danger" id="deleteBtn">Delete my account</button>
+  </div>
+</div>
 
 <footer><div class="wrap">
   <p class="disclose"><b>How FareNest is free:</b> we earn a commission from some travel partners when you book through our links. It never changes the price you pay, and we always sort by the order you choose.</p>
@@ -280,9 +328,12 @@ footer .wrap{padding-block:22px;display:grid;gap:8px}
     $('#sortbar').querySelectorAll('button').forEach(b => b.onclick = () => { sort=b.dataset.s; render(); });
 
     const ok = data.providers.filter(p=>p.ok);
-    $('#status').innerHTML = `<span><b class="num">${rows.length}</b> results from ${ok.length} site${ok.length===1?'':'s'}</span>` +
+    const savedOn = Auth.user && isSaved();
+    $('#status').innerHTML = (backendUp ? `<button class="star" type="button" id="starBtn" aria-pressed="${!!savedOn}">${savedOn ? '★ Saved' : '☆ Save search'}</button>` : '') +
+      `<span><b class="num">${rows.length}</b> results from ${ok.length} site${ok.length===1?'':'s'}</span>` +
       data.providers.map(p => `<span class="pill" title="${p.ok?p.count+' results':esc(p.error||'')}"><span class="dot ${p.ok?'':'bad'}"></span>${esc(p.provider)}</span>`).join('');
 
+    const sb = $('#starBtn'); if (sb) sb.onclick = () => toggleSaved().catch(()=>{});
     renderFilters();
     $('#list').innerHTML = rows.length ? rows.map(card).join('') : '<div class="empty">No results match these filters. Try clearing a filter or changing dates.</div>';
     $('#list').querySelectorAll('[data-open]').forEach(b => b.onclick = () => { const k=b.dataset.open; open.has(k)?open.delete(k):open.add(k); render(); });
@@ -414,6 +465,98 @@ footer .wrap{padding-block:22px;display:grid;gap:8px}
         return wrap(C.map(([s,m,c,seats]) => { const pd=1400+seats*220+Math.floor(r()*900); return {k:s+m, base:pd*days, row:{supplier:s, model:m, category:c, seats, transmission:r()>.5?'Automatic':'Manual', fuelPolicy:'Full to full', unlimitedKm:r()>.5, days, pricePerDay:pd}}; }),'cars'); },
     };
   })();
+
+  // ---------- Accounts (shared with the mobile apps) ----------
+  const Auth = { token: '', user: null, saved: { recent: [], starred: [] } };
+  const store = { get(k){ try { return localStorage.getItem(k) || ''; } catch { return ''; } }, set(k,v){ try { v ? localStorage.setItem(k,v) : localStorage.removeItem(k); } catch {} } };
+  let backendUp = false, signupMode = false;
+
+  async function authApi(path, opts = {}) {
+    const r = await fetch(path, { method: opts.method || 'GET', headers: { 'Content-Type':'application/json', ...(Auth.token ? { Authorization: 'Bearer '+Auth.token } : {}) }, body: opts.body ? JSON.stringify(opts.body) : undefined });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 401 && Auth.token) signOut();
+    if (!r.ok) throw new Error(j.error || 'Something went wrong. Please try again.');
+    return j;
+  }
+  function paintAccount(){
+    const u = Auth.user;
+    $('#acctName').textContent = u ? (u.name || u.email.split('@')[0]) : 'Log in';
+    $('#acctAv').innerHTML = u ? (u.picture ? `<img src="${esc(u.picture)}" alt="">` : esc((u.name || u.email)[0].toUpperCase())) : '→';
+    if (data) render();
+  }
+  function signOut(){ Auth.token=''; Auth.user=null; Auth.saved={recent:[],starred:[]}; store.set('fn_token',''); $('#acctModal').hidden = true; paintAccount(); }
+  async function signedIn(token){
+    Auth.token = token; store.set('fn_token', token);
+    try { Auth.user = (await authApi('/api/me')).user; Auth.saved = await authApi('/api/me/saved'); } catch { return; }
+    paintAccount();
+  }
+  const searchKey = () => vertical + ':' + JSON.stringify(Object.fromEntries(params()));
+  const isSaved = () => Auth.saved.starred.some(s => s.key === searchKey());
+  function searchLabel(){
+    const p = Object.fromEntries(params());
+    return vertical==='flights' ? `${(p.origin||'').toUpperCase()} → ${(p.destination||'').toUpperCase()}` : vertical==='hotels' ? `Hotels in ${p.city}` : `Cars at ${p.pickup}`;
+  }
+  async function toggleSaved(){
+    if (!Auth.user) return openLogin();
+    const key = searchKey(), q = Object.fromEntries(params());
+    const starred = isSaved() ? Auth.saved.starred.filter(s => s.key !== key) : [{ key, vertical, query: q, label: searchLabel(), at: Date.now() }, ...Auth.saved.starred];
+    Auth.saved = await authApi('/api/me/saved', { method:'PUT', body: { ...Auth.saved, starred } });
+    render();
+  }
+
+  function openLogin(){ if (!backendUp) return; $('#loginErr').hidden = true; $('#loginModal').hidden = false; $('#lfEmail').focus(); }
+  function setMode(s){
+    signupMode = s; $('#lfName').hidden = !s;
+    $('#loginTitle').textContent = s ? 'Create your account' : 'Log in to FareNest';
+    $('#loginSubmit').textContent = s ? 'Create account' : 'Log in';
+    $('#loginSwitch').textContent = s ? 'Already have an account? Log in' : 'New here? Create an account';
+    $('#lfPass').autocomplete = s ? 'new-password' : 'current-password';
+  }
+  $('#loginSwitch').onclick = () => setMode(!signupMode);
+  $('#loginForm').onsubmit = async e => {
+    e.preventDefault(); $('#loginErr').hidden = true;
+    try {
+      const body = { email: $('#lfEmail').value.trim(), password: $('#lfPass').value, name: $('#lfName').value.trim() };
+      const r = await authApi(signupMode ? '/api/auth/signup' : '/api/auth/login', { method:'POST', body });
+      $('#loginModal').hidden = true; $('#lfPass').value = ''; await signedIn(r.token);
+    } catch (err) { $('#loginErr').textContent = err.message; $('#loginErr').hidden = false; }
+  };
+  $('#googleBtn').onclick = e => { e.preventDefault(); location.href = '/auth/google/start?redirect=/'; };
+  let confirmDelete = false;
+  $('#acctBtn').onclick = () => {
+    if (!Auth.user) return openLogin();
+    confirmDelete = false; $('#deleteBtn').textContent = 'Delete my account';
+    $('#acctTitle').textContent = Auth.user.name || 'Your account';
+    $('#acctEmail').textContent = `${Auth.user.email} · signed in with ${Auth.user.providers.join(', ')}`;
+    const list = [...Auth.saved.starred, ...Auth.saved.recent.filter(r => !Auth.saved.starred.some(s => s.key === r.key))].slice(0, 12);
+    $('#savedList').innerHTML = list.length ? list.map((s,i) => `<button type="button" data-i="${i}"><span>${esc(s.label)}</span><span class="from">${s.vertical}</span></button>`).join('') : '<span class="from">Save a search with ☆ on the results, or from the app. It will show up here.</span>';
+    $('#savedList').querySelectorAll('button').forEach(b => b.onclick = () => runSaved(list[+b.dataset.i]));
+    $('#acctModal').hidden = false;
+  };
+  function runSaved(s){
+    $('#acctModal').hidden = true; setVertical(s.vertical, false);
+    const f = $('#f-'+s.vertical);
+    for (const [k,v] of Object.entries(s.query)) { const el = f.elements[k]; if (el && el.type !== 'radio') el.value = v; }
+    if (s.vertical === 'flights') { const rt = !!s.query.returnDate; $('#trip-ret').checked = rt; $('#trip-one').checked = !rt; $('#returnDate').disabled = !rt; }
+    doSearch();
+  }
+  $('#logoutBtn').onclick = signOut;
+  $('#deleteBtn').onclick = async () => {
+    if (!confirmDelete) { confirmDelete = true; $('#deleteBtn').textContent = 'Tap again to permanently delete your account and saved searches'; return; }
+    await authApi('/api/me', { method:'DELETE' }); signOut();
+  };
+  document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => b.closest('.overlay').hidden = true);
+  document.querySelectorAll('.overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.hidden = true; }));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.overlay').forEach(o => o.hidden = true); });
+
+  // Returning from Google: the server puts the token (or an error) in the address hash.
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (h.get('auth')) { history.replaceState(null, '', location.pathname); signedIn(h.get('auth')); }
+  else if (store.get('fn_token')) signedIn(store.get('fn_token'));
+  if (h.get('auth_error')) { history.replaceState(null, '', location.pathname); setTimeout(() => { openLogin(); $('#loginErr').textContent = h.get('auth_error'); $('#loginErr').hidden = false; }, 300); }
+  // Hide the login button where there is no server (static preview).
+  fetch('/api/auth/config').then(r => r.json()).then(c => { backendUp = true; $('#googleBtn').hidden = !c.google; $('#googleBtn').nextElementSibling.hidden = !c.google; })
+    .catch(() => { $('#acctBtn').hidden = true; });
 
   const start = location.hash.slice(1);
   setVertical(['flights','hotels','cars'].includes(start) ? start : 'flights');
