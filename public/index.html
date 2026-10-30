@@ -8,6 +8,8 @@
 <body>
 <title>FareNest Travel Search</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<!-- Address of your FareNest server. Empty = same server that serves this page. For GitHub Pages, set it to your deployed server, e.g. https://farenest-api.onrender.com -->
+<meta name="farenest-api" content="">
 <meta name="description" content="Compare flight, hotel and car rental prices from many travel sites in one search.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -255,6 +257,8 @@ footer .wrap{padding-block:22px;display:grid;gap:8px}
 <script>
 (function(){
   const $ = s => document.querySelector(s);
+  const API = ((document.querySelector('meta[name="farenest-api"]') || {}).content || '').replace(/\/$/, '');
+  const abs = l => !l ? '' : /^https?:/.test(l) ? l : API + l;
   const fmt = (n, cur='INR') => new Intl.NumberFormat('en-IN',{style:'currency',currency:cur||'INR',maximumFractionDigits:0}).format(n);
   const iso = d => d.toISOString().slice(0,10);
   const plus = n => { const d = new Date(); d.setDate(d.getDate()+n); return iso(d); };
@@ -301,7 +305,7 @@ footer .wrap{padding-block:22px;display:grid;gap:8px}
     $('#status').textContent = 'Checking travel sites…';
     const p = params();
     let r = null, body = null;
-    try { r = await fetch(`/api/search/${vertical}?${p}`); body = await r.json(); } catch { body = null; }
+    try { r = await fetch(`${API}/api/search/${vertical}?${p}`); body = await r.json(); } catch { body = null; }
     if (r && body && !r.ok) { // real backend, real validation error
       $('#list').innerHTML = `<div class="empty">${esc(body.error || 'Search failed. Please try again.')}</div>`; $('#status').textContent=''; return;
     }
@@ -356,7 +360,7 @@ footer .wrap{padding-block:22px;display:grid;gap:8px}
       <span class="pv">${esc(d.provider)} ${i===0?'<span class="cheapest">Cheapest</span>':''}</span>
       <span class="tags">${d.freeCancellation?'<span class="pill">Free cancellation</span>':''}${d.breakfast?'<span class="pill">Breakfast</span>':''}</span>
       <span class="amt num">${fmt(d.price,d.currency)}</span>
-      ${d.link?`<a class="btn" href="${d.link}" target="_blank" rel="noopener sponsored">View deal</a>`:'<span class="from">No booking link</span>'}
+      ${d.link?`<a class="btn" href="${abs(d.link)}" target="_blank" rel="noopener sponsored">View deal</a>`:'<span class="from">No booking link</span>'}
     </div>`).join('')}</div>`;
   }
 
@@ -366,7 +370,7 @@ footer .wrap{padding-block:22px;display:grid;gap:8px}
       ${n>1?`<span class="from">${n} deals from</span>`:`<span class="from">${esc(best.provider)}</span>`}
       <span class="price num">${fmt(r.price,r.currency)}</span>
       ${n>1 && r.maxPrice>r.price?`<span class="from num">save up to ${fmt(r.maxPrice-r.price,r.currency)}</span>`:''}
-      ${best.link?`<a class="btn" href="${best.link}" target="_blank" rel="noopener sponsored">Select</a>`:''}
+      ${best.link?`<a class="btn" href="${abs(best.link)}" target="_blank" rel="noopener sponsored">Select</a>`:''}
       ${n>1?`<button class="link" data-open="${esc(k)}">${open.has(k)?'Hide':'Compare'} ${n} sites</button>`:''}
     </div>`;
   }
@@ -480,7 +484,8 @@ footer .wrap{padding-block:22px;display:grid;gap:8px}
   let backendUp = false, signupMode = false;
 
   async function authApi(path, opts = {}) {
-    const r = await fetch(path, { method: opts.method || 'GET', headers: { 'Content-Type':'application/json', ...(Auth.token ? { Authorization: 'Bearer '+Auth.token } : {}) }, body: opts.body ? JSON.stringify(opts.body) : undefined });
+    if (!backendUp && !path.startsWith('/api/me')) throw new Error('Login will work once the FareNest server is online.');
+    const r = await fetch(API + path, { method: opts.method || 'GET', headers: { 'Content-Type':'application/json', ...(Auth.token ? { Authorization: 'Bearer '+Auth.token } : {}) }, body: opts.body ? JSON.stringify(opts.body) : undefined });
     const j = await r.json().catch(() => ({}));
     if (r.status === 401 && Auth.token) signOut();
     if (!r.ok) throw new Error(j.error || 'Something went wrong. Please try again.');
@@ -512,7 +517,8 @@ footer .wrap{padding-block:22px;display:grid;gap:8px}
     render();
   }
 
-  function openLogin(){ if (!backendUp) return; $('#loginErr').hidden = true; $('#loginModal').hidden = false; $('#lfEmail').focus(); }
+  function openLogin(){
+    $('#loginErr').hidden = backendUp; $('#loginErr').textContent = backendUp ? '' : 'Login will work once the FareNest server is online. This page is running without it.'; $('#loginModal').hidden = false; $('#lfEmail').focus(); }
   function setMode(s){
     signupMode = s; $('#lfName').hidden = !s;
     $('#loginTitle').textContent = s ? 'Create your account' : 'Log in to FareNest';
@@ -529,7 +535,7 @@ footer .wrap{padding-block:22px;display:grid;gap:8px}
       $('#loginModal').hidden = true; $('#lfPass').value = ''; await signedIn(r.token);
     } catch (err) { $('#loginErr').textContent = err.message; $('#loginErr').hidden = false; }
   };
-  $('#googleBtn').onclick = e => { e.preventDefault(); location.href = '/auth/google/start?redirect=/'; };
+  $('#googleBtn').onclick = e => { e.preventDefault(); location.href = `${API}/auth/google/start?redirect=${encodeURIComponent(API ? location.origin + location.pathname : '/')}`; };
   let confirmDelete = false;
   $('#acctBtn').onclick = () => {
     if (!Auth.user) return openLogin();
@@ -564,7 +570,7 @@ footer .wrap{padding-block:22px;display:grid;gap:8px}
   if (h.get('auth_error')) { history.replaceState(null, '', location.pathname); setTimeout(() => { openLogin(); $('#loginErr').textContent = h.get('auth_error'); $('#loginErr').hidden = false; }, 300); }
   // Hide the login button where there is no server (static preview).
   fetch('/api/auth/config').then(r => r.json()).then(c => { backendUp = true; $('#googleBtn').hidden = !c.google; $('#googleBtn').nextElementSibling.hidden = !c.google; })
-    .catch(() => { $('#acctBtn').hidden = true; });
+    .catch(() => { backendUp = false; $('#googleBtn').hidden = false; });
 
   const start = location.hash.slice(1);
   setVertical(['flights','hotels','cars'].includes(start) ? start : 'flights');

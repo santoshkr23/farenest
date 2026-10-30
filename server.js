@@ -11,6 +11,17 @@ const app = express();
 app.set('trust proxy', true);
 app.use(express.json({ limit: '1mb' }));
 store.seedIfEmpty();
+// Let the website on another address (e.g. GitHub Pages) call this server.
+const { allowedOrigins } = require('./lib/auth');
+app.use((req, res, next) => {
+  const o = req.get('origin');
+  if (o && allowedOrigins().includes(o)) {
+    res.set({ 'Access-Control-Allow-Origin': o, Vary: 'Origin',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS' });
+    if (req.method === 'OPTIONS') return res.sendStatus(204);
+  }
+  next();
+});
 app.use(require('./lib/auth').router); // accounts: website + mobile apps
 
 const CURRENCY = process.env.DEFAULT_CURRENCY || 'INR';
