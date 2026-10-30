@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>FareNest Admin</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root{--bg:#f3f6f5;--surface:#fff;--ink:#13232b;--muted:#5a6b70;--line:#dbe3e1;--band:#0f3b3f;--accent:#e8a317;--teal:#0e6b6b;--good:#1d7a4f;--bad:#c4472f;--chip:#e7eeec;
+--fd:"Bricolage Grotesque",system-ui,sans-serif;--fb:"Instrument Sans",system-ui,sans-serif;--fm:"JetBrains Mono",ui-monospace,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#0c1517;--surface:#13201f;--ink:#e6efed;--muted:#93a6a4;--line:#24353a;--band:#0a2b2e;--teal:#4fb3ad;--good:#5cc995;--chip:#1b2c2d;color-scheme:dark}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 var(--fb)}
+button,input,select,textarea{font:inherit;color:inherit}
+header{background:var(--band);color:#eaf3f1;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
+header b{font-family:var(--fd);font-size:20px}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px;display:grid;gap:20px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+h2{font-family:var(--fd);font-size:18px;margin:0 0 12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.kpi small{color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-size:11px;font-weight:600}
+.kpi div{font-family:var(--fd);font-size:26px;font-variant-numeric:tabular-nums}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.scroll{overflow-x:auto}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:6px 12px;cursor:pointer}
+.btn.primary{background:var(--teal);color:#fff;border-color:var(--teal)}
+.btn.danger{color:var(--bad)}
+.pill{display:inline-block;background:var(--chip);border-radius:999px;padding:1px 8px;font-size:12px;margin:1px}
+.on{color:var(--good);font-weight:600}.off{color:var(--muted)}
+form.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600}
+label.f span{font-weight:400;color:var(--muted);font-size:12px}
+input[type=text],input[type=password],input[type=number],input[type=url],select,textarea{border:1px solid var(--line);border-radius:7px;padding:7px 9px;background:var(--bg);width:100%}
+textarea{font-family:var(--fm);font-size:12px;min-height:80px}
+fieldset{border:1px solid var(--line);border-radius:8px;grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;padding:12px}
+legend{font-weight:700;padding:0 6px}
+.full{grid-column:1/-1}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.msg{padding:8px 12px;border-radius:7px;background:var(--chip);white-space:pre-wrap;font-family:var(--fm);font-size:12px;max-height:240px;overflow:auto}
+.bars{display:flex;align-items:flex-end;gap:6px;height:90px}
+.bars div{flex:1;background:var(--teal);border-radius:4px 4px 0 0;min-height:2px;position:relative}
+.bars span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:10px;color:var(--muted)}
+#login{max-width:340px;margin:80px auto}
+.help{color:var(--muted);font-size:13px}
+code{font-family:var(--fm);font-size:12px;background:var(--chip);padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+<div id="login" class="box" hidden>
+  <h2>FareNest admin</h2>
+  <form id="loginForm" class="row"><input type="password" id="pw" placeholder="Admin password" required style="flex:1"><button class="btn primary">Log in</button></form>
+  <p id="loginErr" class="help"></p>
+</div>
+
+<div id="app" hidden>
+<header><b>FareNest admin</b><div class="row"><a href="/" style="color:inherit">View site</a><button class="btn" id="logout">Log out</button></div></header>
+<div class="wrap">
+  <section class="box">
+    <h2>Affiliate earnings</h2>
+    <div class="kpis" id="kpis"></div>
+    <p class="help">"Potential commission" assumes every click books. Your real earnings are in each partner's affiliate dashboard; match them using the click ID (sent as <code>{subId}</code>).</p>
+    <div class="bars" id="bars" aria-label="Clicks in the last 7 days" style="margin:12px 0 26px"></div>
+    <div class="scroll"><table id="byProvider"></table></div>
+  </section>
+
+  <section class="box">
+    <div class="row" style="justify-content:space-between"><h2>Travel partners</h2><button class="btn primary" id="addBtn">Add partner</button></div>
+    <div class="scroll"><table id="providers"></table></div>
+  </section>
+
+  <section class="box" id="editor" hidden>
+    <h2 id="edTitle">Add partner</h2>
+    <form class="grid" id="pform">
+      <label class="f">Display name<input type="text" name="name" required placeholder="e.g. MakeMyTrip"></label>
+      <label class="f">Integration type<select name="adapter" id="adapter"></select></label>
+      <label class="f">Logo URL<span>optional</span><input type="url" name="logoUrl"></label>
+      <label class="f">Sort priority<span>lower shows first on ties</span><input type="number" name="priority" value="0"></label>
+      <div class="full row" id="verticals"></div>
+      <label class="row full"><input type="checkbox" name="enabled" checked> Enabled (included in searches)</label>
+
+      <fieldset id="creds"><legend>API credentials</legend></fieldset>
+      <fieldset id="settings"><legend>Settings</legend></fieldset>
+
+      <fieldset><legend>Affiliate / commission</legend>
+        <label class="f">Affiliate ID / marker<input type="text" name="aff.affiliateId"></label>
+        <label class="f">Commission %<span>for earnings estimate</span><input type="number" step="0.01" name="aff.commissionPercent"></label>
+        <label class="f">Flat commission per booking<span>₹, optional</span><input type="number" step="1" name="aff.flatCommission"></label>
+        <label class="f">Affiliate param name<span>e.g. <code>aid</code>, appended to deep links</span><input type="text" name="aff.paramName"></label>
+        <label class="f">Sub-ID param name<span>e.g. <code>subid</code>, for click tracking</span><input type="text" name="aff.subIdParam"></label>
+        <label class="f full">Link template<span>Overrides the above. Placeholders: <code>{url}</code> <code>{rawUrl}</code> <code>{affiliateId}</code> <code>{subId}</code> <code>{origin}</code> <code>{destination}</code> <code>{date}</code> <code>{city}</code> <code>{checkIn}</code> <code>{checkOut}</code> <code>{pickup}</code></span>
+          <input type="text" name="aff.linkTemplate" placeholder="https://partner.com/redirect?aid={affiliateId}&sub={subId}&url={url}"></label>
+      </fieldset>
+
+      <div class="full row"><button class="btn primary">Save partner</button><button type="button" class="btn" id="cancel">Cancel</button></div>
+    </form>
+  </section>
+
+  <section class="box">
+    <h2>Recent clicks</h2>
+    <div class="scroll"><table id="recent"></table></div>
+  </section>
+</div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+let token = sessionStorage.getItem('fn_admin') || '', adapters = [], providers = [], editing = null;
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const inr = n => new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(n||0);
+
+async function api(path, opts={}) {
+  const r = await fetch('/api/admin'+path, { ...opts, headers: { 'Content-Type':'application/json', Authorization:'Bearer '+token }, body: opts.body && JSON.stringify(opts.body) });
+  if (r.status === 401) { showLogin(); throw new Error('Not logged in'); }
+  return r.json();
+}
+function showLogin(){ $('#login').hidden=false; $('#app').hidden=true; }
+$('#loginForm').onsubmit = async e => {
+  e.preventDefault();
+  const r = await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('#pw').value})});
+  const j = await r.json();
+  if (!r.ok) { $('#loginErr').textContent = j.error; return; }
+  token = j.token; sessionStorage.setItem('fn_admin', token); boot();
+};
+$('#logout').onclick = () => { sessionStorage.removeItem('fn_admin'); token=''; showLogin(); };
+
+async function boot(){
+  try { adapters = await api('/adapters'); } catch { return; }
+  $('#login').hidden = true; $('#app').hidden = false;
+  $('#adapter').innerHTML = adapters.map(a => `<option value="${a.key}">${esc(a.label)}</option>`).join('');
+  await Promise.all([loadProviders(), loadStats()]);
+}
+
+async function loadStats(){
+  const s = await api('/stats');
+  const pot = s.byProvider.reduce((a,b)=>a+b.potentialCommission,0);
+  const val = s.byProvider.reduce((a,b)=>a+b.clickedValue,0);
+  $('#kpis').innerHTML = [['Total clicks', s.totalClicks],['Clicks last 7 days', Object.values(s.last7Days).reduce((a,b)=>a+b,0)],['Value of clicked deals', inr(val)],['Potential commission', inr(pot)]]
+    .map(([l,v]) => `<div class="kpi"><small>${l}</small><div>${v}</div></div>`).join('');
+  const max = Math.max(1, ...Object.values(s.last7Days));
+  $('#bars').innerHTML = Object.entries(s.last7Days).map(([d,n]) => `<div style="height:${n/max*100}%" title="${d}: ${n} clicks"><span>${d.slice(5)} · ${n}</span></div>`).join('');
+  $('#byProvider').innerHTML = '<tr><th>Partner</th><th>Clicks</th><th>Flights</th><th>Hotels</th><th>Cars</th><th>Potential commission</th></tr>' +
+    (s.byProvider.map(p => `<tr><td>${esc(p.provider)}</td><td>${p.clicks}</td><td>${p.flights||0}</td><td>${p.hotels||0}</td><td>${p.cars||0}</td><td>${inr(p.potentialCommission)}</td></tr>`).join('') || '<tr><td colspan="6" class="help">No clicks yet. They appear when visitors press "View deal".</td></tr>');
+  $('#recent').innerHTML = '<tr><th>Time</th><th>Partner</th><th>Type</th><th>Item</th><th>Price</th><th>Click ID</th></tr>' +
+    (s.recent.map(c => `<tr><td>${new Date(c.ts).toLocaleString('en-IN')}</td><td>${esc(c.provider)}</td><td>${c.vertical}</td><td>${esc(c.item)}</td><td>${inr(c.price)}</td><td><code>${c.clickId}</code></td></tr>`).join('') || '<tr><td colspan="6" class="help">No clicks yet.</td></tr>');
+}
+
+async function loadProviders(){
+  providers = await api('/providers');
+  $('#providers').innerHTML = '<tr><th>Name</th><th>Type</th><th>Covers</th><th>Status</th><th>Commission</th><th></th></tr>' + providers.map(p => `
+    <tr><td><b>${esc(p.name)}</b></td><td>${esc(adapters.find(a=>a.key===p.adapter)?.label||p.adapter)}</td>
+    <td>${p.verticals.map(v=>`<span class="pill">${v}</span>`).join('')}</td>
+    <td class="${p.enabled?'on':'off'}">${p.enabled?'Live':'Paused'}</td>
+    <td>${p.affiliate?.commissionPercent ? p.affiliate.commissionPercent+'%' : (p.affiliate?.affiliateId ? 'ID set' : '<span class="help">not set</span>')}</td>
+    <td class="row"><button class="btn" data-a="test" data-id="${p.id}">Test</button><button class="btn" data-a="toggle" data-id="${p.id}">${p.enabled?'Pause':'Enable'}</button><button class="btn" data-a="edit" data-id="${p.id}">Edit</button><button class="btn danger" data-a="del" data-id="${p.id}">Delete</button></td></tr>
+    <tr hidden id="t-${p.id}"><td colspan="6"><div class="msg"></div></td></tr>`).join('');
+  $('#providers').querySelectorAll('button').forEach(b => b.onclick = () => act(b.dataset.a, b.dataset.id, b));
+}
+
+async function act(a, id, btn){
+  const p = providers.find(x=>x.id===id);
+  if (a==='edit') return openEditor(p);
+  if (a==='toggle') { await api('/providers/'+id,{method:'PUT',body:{enabled:!p.enabled}}); return loadProviders(); }
+  if (a==='del') {
+    if (btn.dataset.confirm !== '1') { btn.dataset.confirm='1'; btn.textContent='Confirm delete'; return; }
+    await api('/providers/'+id,{method:'DELETE'}); return loadProviders();
+  }
+  if (a==='test') {
+    const row = $('#t-'+id); row.hidden=false; row.querySelector('.msg').textContent='Testing…';
+    const r = await api('/providers/'+id+'/test',{method:'POST'});
+    row.querySelector('.msg').textContent = (r.ok?'✓ ':'✗ ') + r.message + (r.sample ? '\n'+JSON.stringify(r.sample,null,2) : '');
+  }
+}
+
+function renderAdapterFields(p){
+  const ad = adapters.find(a => a.key === $('#adapter').value);
+  $('#verticals').innerHTML = '<b>Covers:</b>' + ['flights','hotels','cars'].map(v => `<label class="row"><input type="checkbox" name="v.${v}" ${!ad.verticals.includes(v)?'disabled':''} ${(p?.verticals||ad.verticals).includes(v)&&ad.verticals.includes(v)?'checked':''}> ${v}</label>`).join('');
+  $('#creds').innerHTML = '<legend>API credentials</legend>' + (ad.credentialFields.length ? ad.credentialFields.map(f =>
+    `<label class="f">${esc(f.label)}<input type="${f.secret?'password':'text'}" name="c.${f.key}" value="${esc(p?.credentials?.[f.key]||'')}" autocomplete="off"></label>`).join('') : '<p class="help">None needed.</p>');
+  let s = '<legend>Settings</legend>';
+  if (ad.settingFields === 'generic') {
+    s += `<p class="help full">Map any partner's JSON API. Use <code>{origin}</code>, <code>{destination}</code>, <code>{date}</code>, <code>{city}</code>, <code>{checkIn}</code>, <code>{checkOut}</code>, <code>{pickup}</code>, <code>{adults}</code>, <code>{currency}</code>, <code>{apiKey}</code> in the URL, headers and body.</p>`;
+    for (const v of ['flights','hotels','cars']) {
+      const c = p?.settings?.[v] || {};
+      const sample = Object.fromEntries(ad.fields[v].map(k => [k, 'path.in.result']));
+      s += `<fieldset><legend>${v}</legend>
+        <label class="f full">Request URL<input type="text" name="g.${v}.url" value="${esc(c.url||'')}" placeholder="https://api.partner.com/search?from={origin}&to={destination}&date={date}"></label>
+        <label class="f">Method<select name="g.${v}.method"><option ${c.method!=='POST'?'selected':''}>GET</option><option ${c.method==='POST'?'selected':''}>POST</option></select></label>
+        <label class="f">Results array path<span>e.g. <code>data.offers</code></span><input type="text" name="g.${v}.resultsPath" value="${esc(c.resultsPath||'')}"></label>
+        <label class="f full">Headers (JSON)<textarea name="g.${v}.headers" placeholder='{"Authorization":"Bearer {apiKey}"}'>${esc(c.headers||'')}</textarea></label>
+        <label class="f full">Body template (POST only)<textarea name="g.${v}.body">${esc(c.body||'')}</textarea></label>
+        <label class="f full">Field mapping (JSON: our field → path in each result)<textarea name="g.${v}.mapping" placeholder='${esc(JSON.stringify(sample))}'>${esc(c.mapping||'')}</textarea></label>
+      </fieldset>`;
+    }
+  } else if (ad.settingFields.length) {
+    s += ad.settingFields.map(f => f.type==='select'
+      ? `<label class="f">${esc(f.label)}<select name="s.${f.key}">${f.options.map(o=>`<option ${p?.settings?.[f.key]===o?'selected':''}>${o}</option>`).join('')}</select></label>`
+      : `<label class="f">${esc(f.label)}<input type="${f.type==='number'?'number':'text'}" step="any" name="s.${f.key}" value="${esc(p?.settings?.[f.key]??'')}"></label>`).join('');
+  } else s += '<p class="help">None.</p>';
+  $('#settings').innerHTML = s;
+}
+
+function openEditor(p){
+  editing = p || null;
+  const f = $('#pform'); f.reset();
+  $('#edTitle').textContent = p ? 'Edit '+p.name : 'Add partner';
+  if (p) {
+    f.name.value = p.name; f.adapter.value = p.adapter; f.logoUrl.value = p.logoUrl||''; f.priority.value = p.priority||0; f.enabled.checked = p.enabled;
+    for (const k of ['affiliateId','commissionPercent','flatCommission','paramName','subIdParam','linkTemplate']) f['aff.'+k].value = p.affiliate?.[k] ?? '';
+  }
+  f.adapter.disabled = !!p;
+  renderAdapterFields(p);
+  $('#editor').hidden = false; $('#editor').scrollIntoView({behavior:'smooth'});
+}
+$('#adapter').onchange = () => renderAdapterFields(null);
+$('#addBtn').onclick = () => openEditor(null);
+$('#cancel').onclick = () => { $('#editor').hidden = true; };
+
+$('#pform').onsubmit = async e => {
+  e.preventDefault();
+  const f = e.target, body = { name:f.name.value, adapter:f.adapter.value, logoUrl:f.logoUrl.value, priority:+f.priority.value, enabled:f.enabled.checked,
+    verticals:[], credentials:{}, settings:{}, affiliate:{} };
+  for (const el of f.elements) {
+    if (!el.name) continue;
+    const [kind, a, b] = el.name.split('.');
+    if (kind==='v' && el.checked) body.verticals.push(a);
+    if (kind==='c') body.credentials[a] = el.value;
+    if (kind==='s') body.settings[a] = el.type==='number' ? Number(el.value) : el.value;
+    if (kind==='g') { body.settings[a] ||= {}; body.settings[a][b] = el.value; }
+    if (kind==='aff') body.affiliate[a] = el.value;
+  }
+  if (!body.verticals.length) { alertBox('Pick at least one of flights, hotels or cars.'); return; }
+  const r = editing ? await api('/providers/'+editing.id,{method:'PUT',body}) : await api('/providers',{method:'POST',body});
+  if (r.error) return alertBox(r.error);
+  $('#editor').hidden = true; loadProviders();
+};
+function alertBox(m){ let el = $('#formErr'); if (!el) { el = document.createElement('p'); el.id='formErr'; el.className='msg full'; $('#pform').prepend(el); } el.textContent = m; }
+
+boot();
+</script>
+</body>
+</html>

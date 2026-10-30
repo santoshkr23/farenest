@@ -1,0 +1,421 @@
+<title>FareNest Travel Search</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Compare flight, hotel and car rental prices from many travel sites in one search.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: departure-board hero band with the search panel, then a results column with a filter rail */
+:root{
+  --bg:#f3f6f5; --surface:#ffffff; --ink:#13232b; --muted:#5a6b70; --line:#dbe3e1;
+  --band:#0f3b3f; --band-ink:#eaf3f1; --accent:#e8a317; --accent-ink:#1c1405; --teal:#0e6b6b;
+  --good:#1d7a4f; --chip:#e7eeec;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0c1517; --surface:#13201f; --ink:#e6efed; --muted:#93a6a4; --line:#24353a;
+  --band:#0a2b2e; --band-ink:#e6efed; --accent:#f0b43a; --accent-ink:#1c1405; --teal:#4fb3ad;
+  --good:#5cc995; --chip:#1b2c2d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1517; --surface:#13201f; --ink:#e6efed; --muted:#93a6a4; --line:#24353a;
+  --band:#0a2b2e; --band-ink:#e6efed; --accent:#f0b43a; --accent-ink:#1c1405; --teal:#4fb3ad;
+  --good:#5cc995; --chip:#1b2c2d; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--f-mono)}
+
+/* Header + hero band */
+.band{background:var(--band);color:var(--band-ink)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;padding-block:16px;gap:12px}
+.logo{font-family:var(--f-display);font-weight:800;font-size:22px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px;color:var(--band-ink);text-decoration:none}
+.logo svg{flex:none}
+header nav{display:flex;gap:18px;font-size:14px;opacity:.85}
+header nav a{color:inherit;text-decoration:none}
+.hero .wrap{padding-block:28px 34px}
+.hero h1{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,4.6vw,46px);line-height:1.05;letter-spacing:-.025em;margin:0 0 6px;text-wrap:balance;max-width:20ch}
+.hero p.sub{margin:0 0 22px;opacity:.8;max-width:56ch}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tab{border:1px solid rgba(255,255,255,.22);background:transparent;color:var(--band-ink);padding:8px 16px;border-radius:999px;cursor:pointer;display:flex;gap:8px;align-items:center;font-weight:500}
+.tab[aria-selected="true"]{background:var(--band-ink);color:var(--band);border-color:var(--band-ink)}
+.panel{background:var(--surface);color:var(--ink);border-radius:var(--r);padding:12px;display:grid;gap:8px;grid-template-columns:repeat(12,1fr);box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.field{display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;min-width:0}
+.field label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.field input,.field select{border:0;background:transparent;padding:2px 0;font-size:16px;width:100%;min-width:0;outline:none}
+.field input.code{font-family:var(--f-mono);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.c3{grid-column:span 3}.c2{grid-column:span 2}.c4{grid-column:span 4}.c6{grid-column:span 6}
+.go{grid-column:span 2;background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;font-weight:700;font-size:16px;cursor:pointer;min-height:52px}
+.go:hover{filter:brightness(1.05)}
+.swap{display:flex;align-items:center;gap:8px}
+.trip{display:flex;gap:14px;font-size:14px;margin-bottom:10px;color:var(--band-ink)}
+.trip label{display:flex;gap:6px;align-items:center;cursor:pointer}
+@media (max-width:820px){.c3,.c2,.c4{grid-column:span 6}.go{grid-column:span 12}}
+@media (max-width:480px){.c3,.c2,.c4,.c6{grid-column:span 12}}
+
+/* Results */
+main .wrap{padding-block:22px 40px}
+.layout{display:grid;grid-template-columns:240px 1fr;gap:22px;align-items:start}
+@media (max-width:820px){.layout{grid-template-columns:1fr}}
+aside.filters{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:grid;gap:16px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+@media (max-width:820px){aside.filters{position:static}}
+.filters h3{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 6px}
+.filters label{display:flex;gap:8px;align-items:center;font-size:14px;padding:3px 0;cursor:pointer}
+.filters label span.r{margin-left:auto;color:var(--muted);font-size:13px}
+.filters input[type=range]{width:100%;accent-color:var(--teal)}
+.results{min-width:0;display:grid;gap:12px}
+.sortbar{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.sortbar button{border:0;background:transparent;padding:10px 12px;text-align:left;cursor:pointer;border-bottom:3px solid transparent;display:flex;flex-direction:column}
+.sortbar button b{font-size:14px}
+.sortbar button small{color:var(--muted);font-size:13px}
+.sortbar button[aria-pressed="true"]{border-bottom-color:var(--accent);background:var(--chip)}
+.status{font-size:13px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:5px;background:var(--chip);border-radius:999px;padding:2px 9px;font-size:12px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--good)}
+.dot.bad{background:#c4472f}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);display:grid;grid-template-columns:1fr auto;overflow:hidden}
+.card .main{padding:14px 16px;min-width:0;display:grid;gap:10px}
+.card .buy{border-left:1px dashed var(--line);padding:14px 16px;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:6px;min-width:190px}
+@media (max-width:560px){.card{grid-template-columns:1fr}.card .buy{border-left:0;border-top:1px dashed var(--line);align-items:stretch;min-width:0}}
+.leg{display:grid;grid-template-columns:120px auto 1fr auto;gap:12px;align-items:center}
+@media (max-width:560px){.leg{grid-template-columns:auto 1fr auto}.leg .air{grid-column:1/-1}}
+.air{display:flex;gap:8px;align-items:center;min-width:0;font-size:14px}
+.badge{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;font-family:var(--f-mono);font-weight:700;font-size:11px;color:#fff;flex:none}
+.time{font-family:var(--f-mono);font-weight:700;font-size:20px;line-height:1}
+.time small{display:block;font-family:var(--f-body);font-weight:500;font-size:12px;color:var(--muted);margin-top:4px}
+.path{display:flex;flex-direction:column;align-items:center;font-size:12px;color:var(--muted);min-width:0}
+.path .line{width:100%;height:2px;background:var(--line);position:relative;margin:4px 0}
+.path .line i{position:absolute;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--accent);left:calc(50% - 4px)}
+.stops0{color:var(--good)}
+.price{font-family:var(--f-display);font-weight:800;font-size:26px;letter-spacing:-.02em;line-height:1}
+.from{font-size:12px;color:var(--muted)}
+.btn{background:var(--teal);color:#fff;border:0;border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;text-decoration:none;text-align:center;display:inline-block}
+.link{background:none;border:0;color:var(--teal);cursor:pointer;padding:0;font-size:13px;font-weight:600}
+.deals{grid-column:1/-1;border-top:1px solid var(--line);background:var(--bg)}
+.deal{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.deal:last-child{border-bottom:0}
+.deal .pv{font-weight:600;min-width:0;flex:1}
+.deal .tags{display:flex;gap:6px;flex-wrap:wrap}
+.deal .amt{font-weight:700;font-family:var(--f-mono)}
+.cheapest{color:var(--good);font-size:12px;font-weight:600}
+.hotel{display:grid;grid-template-columns:110px 1fr;gap:14px;align-items:start}
+.thumb{aspect-ratio:1;max-width:100%;border-radius:8px;display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:28px;color:#fff}
+.stars{color:var(--accent);letter-spacing:2px;font-size:13px}
+.score{background:var(--teal);color:#fff;border-radius:6px;padding:1px 7px;font-weight:700;font-size:13px}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:var(--r);padding:28px;text-align:center;color:var(--muted)}
+.skeleton{height:120px;border-radius:var(--r);background:linear-gradient(90deg,var(--surface),var(--chip),var(--surface));background-size:200% 100%;animation:sh 1.2s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.skeleton{animation:none}}
+.routes{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.routes button{border:1px solid rgba(255,255,255,.25);background:transparent;color:var(--band-ink);border-radius:999px;padding:5px 12px;cursor:pointer;font-family:var(--f-mono);font-size:13px}
+footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+footer .wrap{padding-block:22px;display:grid;gap:8px}
+.disclose{max-width:75ch}
+.demo-note{font-size:12px;color:var(--muted)}
+</style>
+
+<div class="band">
+  <header><div class="wrap">
+    <a class="logo" href="#flights" aria-label="FareNest home">
+      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="var(--accent)"/><path d="M6 16.5l14-6-4.5 9-2.5-3.2-4 2.2 1.5-3.5z" fill="var(--band)"/></svg>
+      FareNest
+    </a>
+    <nav><a href="#flights">Flights</a><a href="#hotels">Hotels</a><a href="#cars">Car hire</a></nav>
+  </div></header>
+  <section class="hero"><div class="wrap">
+    <h1 id="headline">One search. Every fare. The lowest price wins.</h1>
+    <p class="sub" id="subline">We check airlines and travel sites at the same time and show you who sells the same ticket for less.</p>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-v="flights" id="tab-flights">✈ Flights</button>
+      <button class="tab" role="tab" data-v="hotels" id="tab-hotels">⌂ Hotels</button>
+      <button class="tab" role="tab" data-v="cars" id="tab-cars">◉ Car hire</button>
+    </div>
+
+    <form id="f-flights" class="sf" autocomplete="off">
+      <div class="trip">
+        <label><input type="radio" name="trip" value="oneway" id="trip-one" checked> One way</label>
+        <label><input type="radio" name="trip" value="return" id="trip-ret"> Return</label>
+      </div>
+      <div class="panel">
+        <div class="field c2"><label for="origin">From</label><input class="code" id="origin" name="origin" value="DEL" maxlength="3" required></div>
+        <div class="field c2"><label for="destination">To</label><input class="code" id="destination" name="destination" value="BOM" maxlength="3" required></div>
+        <div class="field c2"><label for="date">Depart</label><input type="date" id="date" name="date" required></div>
+        <div class="field c2"><label for="returnDate">Return</label><input type="date" id="returnDate" name="returnDate" disabled></div>
+        <div class="field c2"><label for="adults">Travellers · class</label>
+          <select id="adults" name="adults"><option value="1">1 adult · Economy</option><option value="2">2 adults · Economy</option><option value="3">3 adults · Economy</option><option value="4">4 adults · Economy</option></select></div>
+        <button class="go" type="submit">Search flights</button>
+      </div>
+      <div class="routes" aria-label="Popular routes">
+        <button type="button" data-r="DEL-BOM">DEL → BOM</button><button type="button" data-r="BLR-DEL">BLR → DEL</button>
+        <button type="button" data-r="BOM-GOI">BOM → GOI</button><button type="button" data-r="CCU-BLR">CCU → BLR</button>
+        <button type="button" data-r="DEL-DXB">DEL → DXB</button>
+      </div>
+    </form>
+
+    <form id="f-hotels" class="sf" autocomplete="off" hidden>
+      <div class="panel">
+        <div class="field c4"><label for="city">City or area</label><input id="city" name="city" value="Goa" required></div>
+        <div class="field c2"><label for="checkIn">Check-in</label><input type="date" id="checkIn" name="checkIn" required></div>
+        <div class="field c2"><label for="checkOut">Check-out</label><input type="date" id="checkOut" name="checkOut" required></div>
+        <div class="field c2"><label for="hadults">Guests · rooms</label>
+          <select id="hadults" name="adults"><option value="2">2 guests · 1 room</option><option value="1">1 guest · 1 room</option><option value="3">3 guests · 1 room</option><option value="4">4 guests · 2 rooms</option></select></div>
+        <button class="go" type="submit">Search hotels</button>
+      </div>
+    </form>
+
+    <form id="f-cars" class="sf" autocomplete="off" hidden>
+      <div class="panel">
+        <div class="field c4"><label for="pickup">Pick-up location</label><input id="pickup" name="pickup" value="Bengaluru Airport" required></div>
+        <div class="field c3"><label for="pickupDate">Pick-up date</label><input type="date" id="pickupDate" name="pickupDate" required></div>
+        <div class="field c3"><label for="dropoffDate">Drop-off date</label><input type="date" id="dropoffDate" name="dropoffDate" required></div>
+        <button class="go" type="submit">Search cars</button>
+      </div>
+    </form>
+  </div></section>
+</div>
+
+<main><div class="wrap">
+  <div class="layout">
+    <aside class="filters" id="filters" aria-label="Filters"></aside>
+    <section class="results" aria-live="polite">
+      <div class="sortbar" id="sortbar"></div>
+      <div class="status" id="status"></div>
+      <div id="list"></div>
+    </section>
+  </div>
+</div></main>
+
+<footer><div class="wrap">
+  <p class="disclose"><b>How FareNest is free:</b> we earn a commission from some travel partners when you book through our links. It never changes the price you pay, and we always sort by the order you choose.</p>
+  <p class="demo-note" id="demoNote" hidden>Showing sample prices from demo providers. Connect real partner APIs in the admin panel to show live fares.</p>
+  <p>© <span id="yr"></span> FareNest</p>
+</div></footer>
+
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  const fmt = (n, cur='INR') => new Intl.NumberFormat('en-IN',{style:'currency',currency:cur||'INR',maximumFractionDigits:0}).format(n);
+  const iso = d => d.toISOString().slice(0,10);
+  const plus = n => { const d = new Date(); d.setDate(d.getDate()+n); return iso(d); };
+  const hm = s => new Date(s).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  const dur = m => `${Math.floor(m/60)}h ${String(m%60).padStart(2,'0')}m`;
+  const hue = s => { let h=0; for (const c of String(s)) h=(h*31+c.charCodeAt(0))%360; return h; };
+  $('#yr').textContent = new Date().getFullYear();
+
+  // Defaults
+  $('#date').value = plus(14); $('#returnDate').value = plus(18);
+  $('#checkIn').value = plus(21); $('#checkOut').value = plus(24);
+  $('#pickupDate').value = plus(10); $('#dropoffDate').value = plus(13);
+
+  let vertical = 'flights', data = null, sort = 'best', filters = {}, open = new Set();
+  const COPY = {
+    flights:['One search. Every fare. The lowest price wins.','We check airlines and travel sites at the same time and show you who sells the same ticket for less.'],
+    hotels:['Same room. Different prices. We find the cheaper one.','Compare one hotel across booking sites, with free cancellation and breakfast shown up front.'],
+    cars:['Hire the car, skip the overpaying.','Compare rental companies and brokers for the same car and dates.'],
+  };
+
+  function setVertical(v, run=true){
+    vertical = v;
+    document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.v===v));
+    document.querySelectorAll('.sf').forEach(f => f.hidden = f.id !== 'f-'+v);
+    $('#headline').textContent = COPY[v][0]; $('#subline').textContent = COPY[v][1];
+    sort='best'; filters={}; open.clear();
+    if (location.hash !== '#'+v) history.replaceState(null,'','#'+v);
+    if (run) doSearch();
+  }
+  document.querySelectorAll('.tab').forEach(t => t.onclick = () => setVertical(t.dataset.v));
+  document.querySelectorAll('input[name=trip]').forEach(r => r.onchange = () => { $('#returnDate').disabled = !$('#trip-ret').checked; });
+  document.querySelectorAll('.routes button').forEach(b => b.onclick = () => { const [o,d]=b.dataset.r.split('-'); $('#origin').value=o; $('#destination').value=d; doSearch(); });
+  document.querySelectorAll('.sf').forEach(f => f.addEventListener('submit', e => { e.preventDefault(); doSearch(); }));
+  window.addEventListener('hashchange', () => { const v = location.hash.slice(1); if (['flights','hotels','cars'].includes(v) && v!==vertical) setVertical(v); });
+
+  function params(){
+    const f = $('#f-'+vertical); const p = new URLSearchParams(new FormData(f));
+    if (vertical==='flights' && !$('#trip-ret').checked) p.delete('returnDate');
+    p.delete('trip'); return p;
+  }
+
+  async function doSearch(){
+    $('#list').innerHTML = '<div class="skeleton"></div><div class="skeleton" style="margin-top:12px"></div><div class="skeleton" style="margin-top:12px"></div>';
+    $('#status').textContent = 'Checking travel sites…';
+    const p = params();
+    let r = null, body = null;
+    try { r = await fetch(`/api/search/${vertical}?${p}`); body = await r.json(); } catch { body = null; }
+    if (r && body && !r.ok) { // real backend, real validation error
+      $('#list').innerHTML = `<div class="empty">${esc(body.error || 'Search failed. Please try again.')}</div>`; $('#status').textContent=''; return;
+    }
+    if (body && body.results) { data = body; $('#demoNote').hidden = !data.providers.some(x => /demo/i.test(x.provider)); }
+    else { data = Mock[vertical](Object.fromEntries(p)); $('#demoNote').hidden = false; } // no backend: offline preview
+    open.clear(); filters = {}; render();
+  }
+
+  // ---------- Rendering ----------
+  function visible(){
+    let rows = data.results.slice();
+    if (vertical==='flights'){
+      if (filters.stops) rows = rows.filter(r => filters.stops.has(Math.min(r.stops,1)));
+      if (filters.air) rows = rows.filter(r => filters.air.has(r.airline));
+    }
+    if (vertical==='hotels' && filters.stars) rows = rows.filter(r => filters.stars.has(r.stars));
+    if (vertical==='hotels' && filters.fc) rows = rows.filter(r => r.deals.some(d => d.freeCancellation));
+    if (vertical==='cars' && filters.cat) rows = rows.filter(r => filters.cat.has(r.category));
+    if (filters.max) rows = rows.filter(r => r.price <= filters.max);
+    const key = { best: r => r.score, cheapest: r => r.price, fastest: r => vertical==='flights' ? r.durationMin : vertical==='hotels' ? -(r.rating||0) : -(r.seats||0) }[sort];
+    return rows.sort((a,b) => key(a)-key(b));
+  }
+
+  function render(){
+    const rows = visible();
+    const cur = data.results[0]?.currency || 'INR';
+    const third = vertical==='flights' ? 'Fastest' : vertical==='hotels' ? 'Top rated' : 'Most seats';
+    const pick = k => { const tmp = sort; sort = k; const v = visible()[0]; sort = tmp; return v; };
+    const sub = r => !r ? '—' : vertical==='flights' ? `${fmt(r.price,cur)} · ${dur(r.durationMin)}` : fmt(r.price,cur);
+    $('#sortbar').innerHTML = [['best','Best'],['cheapest','Cheapest'],['fastest',third]].map(([k,l]) =>
+      `<button aria-pressed="${sort===k}" data-s="${k}"><b>${l}</b><small class="num">${sub(pick(k))}</small></button>`).join('');
+    $('#sortbar').querySelectorAll('button').forEach(b => b.onclick = () => { sort=b.dataset.s; render(); });
+
+    const ok = data.providers.filter(p=>p.ok);
+    $('#status').innerHTML = `<span><b class="num">${rows.length}</b> results from ${ok.length} site${ok.length===1?'':'s'}</span>` +
+      data.providers.map(p => `<span class="pill" title="${p.ok?p.count+' results':esc(p.error||'')}"><span class="dot ${p.ok?'':'bad'}"></span>${esc(p.provider)}</span>`).join('');
+
+    renderFilters();
+    $('#list').innerHTML = rows.length ? rows.map(card).join('') : '<div class="empty">No results match these filters. Try clearing a filter or changing dates.</div>';
+    $('#list').querySelectorAll('[data-open]').forEach(b => b.onclick = () => { const k=b.dataset.open; open.has(k)?open.delete(k):open.add(k); render(); });
+    $('#list').style.display='grid'; $('#list').style.gap='12px';
+  }
+
+  function esc(s){ return String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function keyOf(r){ return r.flightNumber ? r.flightNumber+r.departAt : (r.name||r.model); }
+
+  function dealsHtml(r){
+    return `<div class="deals">${r.deals.map((d,i)=>`<div class="deal">
+      <span class="pv">${esc(d.provider)} ${i===0?'<span class="cheapest">Cheapest</span>':''}</span>
+      <span class="tags">${d.freeCancellation?'<span class="pill">Free cancellation</span>':''}${d.breakfast?'<span class="pill">Breakfast</span>':''}</span>
+      <span class="amt num">${fmt(d.price,d.currency)}</span>
+      ${d.link?`<a class="btn" href="${d.link}" target="_blank" rel="noopener sponsored">View deal</a>`:'<span class="from">No booking link</span>'}
+    </div>`).join('')}</div>`;
+  }
+
+  function buy(r){
+    const k = keyOf(r), n = r.deals.length, best = r.deals[0];
+    return `<div class="buy">
+      ${n>1?`<span class="from">${n} deals from</span>`:`<span class="from">${esc(best.provider)}</span>`}
+      <span class="price num">${fmt(r.price,r.currency)}</span>
+      ${n>1 && r.maxPrice>r.price?`<span class="from num">save up to ${fmt(r.maxPrice-r.price,r.currency)}</span>`:''}
+      ${best.link?`<a class="btn" href="${best.link}" target="_blank" rel="noopener sponsored">Select</a>`:''}
+      ${n>1?`<button class="link" data-open="${esc(k)}">${open.has(k)?'Hide':'Compare'} ${n} sites</button>`:''}
+    </div>`;
+  }
+
+  function card(r){
+    const k = keyOf(r);
+    let main = '';
+    if (vertical==='flights'){
+      const h = hue(r.airlineCode);
+      main = `<div class="leg">
+        <div class="air"><span class="badge" style="background:hsl(${h} 45% 38%)">${esc(r.airlineCode)}</span><span>${esc(r.airline)}<br><small class="from mono">${esc(r.flightNumber)}</small></span></div>
+        <div class="time">${hm(r.departAt)}<small class="mono">${esc(r.from)}</small></div>
+        <div class="path"><span class="num">${dur(r.durationMin)}</span><span class="line"><i style="${r.stops?'':'display:none'}"></i></span><span class="${r.stops?'':'stops0'}">${r.stops? r.stops+' stop' : 'Direct'}</span></div>
+        <div class="time" style="text-align:right">${hm(r.arriveAt)}<small class="mono">${esc(r.to)}</small></div>
+      </div>`;
+    } else if (vertical==='hotels'){
+      const h = hue(r.name);
+      main = `<div class="hotel">
+        <div class="thumb" style="background:linear-gradient(135deg,hsl(${h} 40% 42%),hsl(${(h+40)%360} 45% 30%))">${esc(r.name[0])}</div>
+        <div style="min-width:0;display:grid;gap:4px">
+          <b style="font-size:17px">${esc(r.name)}</b>
+          <span class="stars" aria-label="${r.stars} star hotel">${'★'.repeat(r.stars||0)}</span>
+          <span class="from">${esc(r.area||'')} · ${r.nights} night${r.nights>1?'s':''}</span>
+          ${r.rating?`<span><span class="score num">${r.rating.toFixed(1)}</span> <span class="from">guest rating</span></span>`:''}
+          <span class="from num">${fmt(r.pricePerNight||r.price/r.nights, r.currency)} per night</span>
+        </div></div>`;
+    } else {
+      const h = hue(r.supplier);
+      main = `<div class="hotel">
+        <div class="thumb" style="background:linear-gradient(135deg,hsl(${h} 35% 40%),hsl(${(h+30)%360} 40% 28%));font-size:14px;text-align:center;padding:6px">${esc(r.category)}</div>
+        <div style="min-width:0;display:grid;gap:4px">
+          <b style="font-size:17px">${esc(r.model)} <span class="from">or similar</span></b>
+          <span class="from">${esc(r.supplier)} · ${r.seats} seats · ${esc(r.transmission||'')}</span>
+          <span class="from">${r.unlimitedKm?'Unlimited km':'Limited km'} · ${esc(r.fuelPolicy||'')}</span>
+          <span class="from num">${fmt(r.pricePerDay||r.price/r.days, r.currency)} per day</span>
+        </div></div>`;
+    }
+    return `<article class="card"><div class="main">${main}</div>${buy(r)}${open.has(k)?dealsHtml(r):''}</article>`;
+  }
+
+  function renderFilters(){
+    const all = data.results, cur = all[0]?.currency || 'INR';
+    let html = '';
+    const box = (group, val, label, count) => `<label><input type="checkbox" data-g="${group}" value="${esc(val)}" ${filters[group]?.has(typeof val==='number'?val:String(val))?'checked':''}> ${esc(label)}<span class="r num">${count}</span></label>`;
+    if (vertical==='flights'){
+      html += `<div><h3>Stops</h3>${box('stops',0,'Direct',all.filter(r=>!r.stops).length)}${box('stops',1,'1+ stops',all.filter(r=>r.stops).length)}</div>`;
+      const air = [...new Set(all.map(r=>r.airline))].sort();
+      html += `<div><h3>Airlines</h3>${air.map(a=>box('air',a,a,all.filter(r=>r.airline===a).length)).join('')}</div>`;
+    }
+    if (vertical==='hotels'){
+      html += `<div><h3>Stars</h3>${[5,4,3,2].map(s=>box('stars',s,'★'.repeat(s),all.filter(r=>r.stars===s).length)).join('')}</div>`;
+      html += `<div><h3>Policies</h3><label><input type="checkbox" id="fc" ${filters.fc?'checked':''}> Free cancellation</label></div>`;
+    }
+    if (vertical==='cars'){
+      const cats = [...new Set(all.map(r=>r.category))];
+      html += `<div><h3>Car type</h3>${cats.map(c=>box('cat',c,c,all.filter(r=>r.category===c).length)).join('')}</div>`;
+    }
+    if (all.length){
+      const lo = Math.min(...all.map(r=>r.price)), hi = Math.max(...all.map(r=>r.price));
+      const v = filters.max || hi;
+      html += `<div><h3>Max price</h3><input type="range" id="maxp" min="${lo}" max="${hi}" step="50" value="${v}" aria-label="Maximum price"><span class="num from" id="maxv">${fmt(v,cur)}</span></div>`;
+    }
+    $('#filters').innerHTML = html || '<span class="from">No filters yet</span>';
+    $('#filters').querySelectorAll('input[data-g]').forEach(i => i.onchange = () => {
+      const g = i.dataset.g, val = g==='stops'||g==='stars' ? Number(i.value) : i.value;
+      filters[g] ||= new Set(); i.checked ? filters[g].add(val) : filters[g].delete(val);
+      if (!filters[g].size) delete filters[g]; render();
+    });
+    const fc = $('#fc'); if (fc) fc.onchange = () => { filters.fc = fc.checked; render(); };
+    const mp = $('#maxp'); if (mp) { mp.oninput = () => { $('#maxv').textContent = fmt(+mp.value,cur); }; mp.onchange = () => { filters.max = +mp.value; render(); }; }
+  }
+
+  // ---------- Offline preview data (used only when the backend is not reachable) ----------
+  const Mock = (() => {
+    const rng = s => { let h=2166136261; for (const c of s) h=Math.imul(h^c.charCodeAt(0),16777619); return () => { h^=h<<13; h^=h>>>17; h^=h<<5; return ((h>>>0)%100000)/100000; }; };
+    const P = [['SkyBazaar (demo)',1],['TripKart (demo)',.97],['GoFareX (demo)',1.04]];
+    const AIR = [['6E','IndiGo'],['AI','Air India'],['UK','Vistara'],['SG','SpiceJet'],['QP','Akasa Air'],['IX','Air India Express']];
+    function wrap(items, vertical){
+      const res = items.map(it => {
+        const pr = rng(it.k);
+        const deals = P.filter(()=>pr()>.15).map(([n,b]) => ({provider:n, price:Math.round(it.base*b*(.94+pr()*.12)), currency:'INR', link:'', freeCancellation: pr()>.4, breakfast: pr()>.55}));
+        if (!deals.length) return null;
+        deals.sort((a,b)=>a.price-b.price);
+        return {...it.row, currency:'INR', deals, price:deals[0].price, maxPrice:deals[deals.length-1].price};
+      }).filter(Boolean);
+      const minP = Math.min(...res.map(r=>r.price)), minD = Math.min(...res.map(r=>r.durationMin||9e9));
+      res.forEach(r => r.score = r.price/minP + (vertical==='flights' ? .5*r.durationMin/minD + .25*r.stops : vertical==='hotels' ? -(r.rating-7)*.08 : 0));
+      res.sort((a,b)=>a.score-b.score);
+      return {vertical, providers:P.map(([n])=>({provider:n, ok:true, count:res.length})), results:res};
+    }
+    return {
+      flights(q){ const r = rng(q.origin+q.destination+q.date); const out=[];
+        for (let i=0;i<12;i++){ const [c,a]=AIR[Math.floor(r()*AIR.length)]; const stops=r()<.65?0:1; const d=95+Math.floor(r()*90)+stops*(60+Math.floor(r()*120));
+          const dep=new Date(q.date+'T00:00:00'); dep.setMinutes(300+Math.floor(r()*1000)); const fn=c+(100+Math.floor(r()*899));
+          out.push({k:fn+i, base:(3200+Math.floor(r()*6500)-stops*600)*(+q.adults||1), row:{airline:a, airlineCode:c, flightNumber:fn, from:q.origin.toUpperCase(), to:q.destination.toUpperCase(), departAt:dep.toISOString(), arriveAt:new Date(dep.getTime()+d*6e4).toISOString(), durationMin:d, stops}}); }
+        return wrap(out,'flights'); },
+      hotels(q){ const r = rng(q.city+q.checkIn); const W=[['Grand','Royal','Lotus','Harbour','Palm','Orchid','Sapphire','Heritage'],['Residency','Suites','Inn','Palace','Retreat','Hotel','Stay','Court']];
+        const nights=Math.max(1,Math.round((new Date(q.checkOut)-new Date(q.checkIn))/864e5)); const out=[];
+        for (let i=0;i<10;i++){ const name=`${W[0][Math.floor(r()*8)]} ${W[1][Math.floor(r()*8)]} ${q.city}`; const stars=2+Math.floor(r()*4); const nightly=1500+stars*1100+Math.floor(r()*2500);
+          out.push({k:name, base:nightly*nights, row:{name, stars, rating:+(6.8+r()*2.9).toFixed(1), area:['City Centre','Airport','Old Town','Business District','Beachside'][Math.floor(r()*5)], nights, pricePerNight:nightly}}); }
+        const seen=new Set(); return wrap(out.filter(o=>!seen.has(o.k)&&seen.add(o.k)),'hotels'); },
+      cars(q){ const r = rng(q.pickup+q.pickupDate); const days=Math.max(1,Math.round((new Date(q.dropoffDate)-new Date(q.pickupDate))/864e5));
+        const C=[['Zoomcar','Maruti Swift','Hatchback',4],['Revv','Hyundai Creta','SUV',5],['Myles','Toyota Innova','MPV',7],['Savaari','Honda City','Sedan',5],['Zoomcar','Mahindra XUV700','SUV',7],['Revv','Tata Nexon EV','Compact SUV',5]];
+        return wrap(C.map(([s,m,c,seats]) => { const pd=1400+seats*220+Math.floor(r()*900); return {k:s+m, base:pd*days, row:{supplier:s, model:m, category:c, seats, transmission:r()>.5?'Automatic':'Manual', fuelPolicy:'Full to full', unlimitedKm:r()>.5, days, pricePerDay:pd}}; }),'cars'); },
+    };
+  })();
+
+  const start = location.hash.slice(1);
+  setVertical(['flights','hotels','cars'].includes(start) ? start : 'flights');
+})();
+</script>
