@@ -62,3 +62,7 @@ Create `providers/myapi.js` exporting `{ label, verticals, credentialFields, set
 - Prices from different partners must be in the same currency (set `DEFAULT_CURRENCY`, and request that currency from each API).
 - Read each partner's terms: most require showing their name, not caching prices too long, and an affiliate disclosure (the footer already has one).
 - For real traffic, move `data/*.json` to a database (Postgres/MongoDB) and the in-memory cache/sessions to Redis.
+
+## Mobile apps
+
+The `mobile/` folder has the Android and iOS app (Expo / React Native). See [mobile/README.md](mobile/README.md) for building and submitting to Google Play and the App Store. Store-required pages: `privacy.html`, `terms.html`, `support.html`.

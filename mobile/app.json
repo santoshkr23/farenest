@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "FareNest",
+    "slug": "farenest",
+    "scheme": "farenest",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#f3f6f5",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f3b3f"
+    },
+    "ios": {
+      "bundleIdentifier": "com.farenest.app",
+      "buildNumber": "1",
+      "supportsTablet": true,
+      "config": { "usesNonExemptEncryption": false },
+      "infoPlist": { "ITSAppUsesNonExemptEncryption": false }
+    },
+    "android": {
+      "package": "com.farenest.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#0f3b3f",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "blockedPermissions": ["android.permission.RECORD_AUDIO"]
+    },
+    "web": { "favicon": "./assets/favicon.png" },
+    "plugins": [
+      "expo-web-browser",
+      "@react-native-community/datetimepicker"
+    ],
+    "extra": {
+      "apiUrl": "",
+      "showServerSetting": true,
+      "privacyUrl": "https://santoshkr23.github.io/farenest/privacy.html",
+      "termsUrl": "https://santoshkr23.github.io/farenest/terms.html",
+      "supportUrl": "https://santoshkr23.github.io/farenest/support.html"
+    }
+  }
+}
